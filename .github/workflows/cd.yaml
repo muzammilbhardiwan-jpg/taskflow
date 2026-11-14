@@ -1,0 +1,18 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: self-hosted
+    steps:
+      - name: Deploy new image to kind cluster
+        run: |
+          kubectl set image deployment/taskflow \
+            taskflow=ghcr.io/${{ github.repository }}:${{ github.event.workflow_run.head_sha }}
+          kubectl rollout status deployment/taskflow --timeout=120s
